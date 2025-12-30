@@ -1,0 +1,25 @@
+name: Notion Sync
+
+on:
+  schedule:
+    - cron: '0 * * * *' # 매시간 정각마다 실행
+  workflow_dispatch: # 수동 실행 버튼
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - run: pip install requests PyGithub
+      - run: python sync_bot.py
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
