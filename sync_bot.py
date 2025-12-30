@@ -4,8 +4,8 @@ from github import Github
 
 def get_page_content(page_id, headers):
     """
-    노션 페이지의 본문을 가져오는 함수 (재귀 호출 포함)
-    하위 문서(child_page)를 만나면 그 안으로 들어가서 내용을 또 가져옴.
+    재귀 함수: 페이지 내용을 가져오고, 하위 페이지(child_page)가 있으면 
+    그 안으로 들어가서 내용을 또 가져와서 합칩니다.
     """
     url = f"https://api.notion.com/v1/blocks/{page_id}/children"
     try:
@@ -16,17 +16,17 @@ def get_page_content(page_id, headers):
         for block in blocks:
             b_type = block['type']
             
-            # 1. 하위 문서(Child Page) 발견 시 처리 (여기가 핵심!)
+            # 1. [핵심] 하위 문서(Child Page) 발견 시!
             if b_type == "child_page":
                 child_title = block['child_page']['title']
                 child_id = block['id']
-                print(f"   -> 하위 문서 발견: {child_title}")
+                print(f"   -> 📂 하위 문서 진입: {child_title}")
                 
-                # 재귀 호출: 하위 문서의 내용을 가져오기 위해 자기 자신을 다시 부름
+                # 여기서 자기 자신을 다시 부름 (재귀 호출)
                 child_body = get_page_content(child_id, headers)
                 
-                # 본문에 하위 문서 내용을 깔끔하게 구획 지어서 추가
-                content += f"\n<hr>\n\n### 📂 [하위 문서] {child_title}\n\n{child_body}\n\n<hr>\n"
+                # 구분선과 함께 하위 내용 추가
+                content += f"\n---\n### 📂 {child_title}\n{child_body}\n---\n"
                 continue
 
             # 2. 일반 텍스트 블록 처리
@@ -58,7 +58,7 @@ def get_page_content(page_id, headers):
 
         return content
     except Exception as e:
-        print(f"Error reading block: {e}")
+        print(f"Error: {e}")
         return ""
 
 def main():
@@ -103,13 +103,14 @@ def main():
             
             print(f"Processing: {title}")
             
-            # 본문 및 하위 문서 내용까지 싹 긁어오기
+            # 본문 + 하위 문서 싹 긁어오기
             body_content = get_page_content(page_id, headers)
             
-            issue_body = f"## Notion Link\n{page_url}\n\n## 내용\n{body_content}"
+            # 이슈 본문 꾸미기
+            issue_body = f"## 🔗 Notion Link\n{page_url}\n\n## 📝 내용\n{body_content}"
             
             repo.create_issue(title=title, body=issue_body)
-            print(f"Successfully created issue: {title}")
+            print(f"Created issue: {title}")
             
             # 상태 변경 (Synced)
             update_url = f"https://api.notion.com/v1/pages/{page_id}"
@@ -117,7 +118,7 @@ def main():
             requests.patch(update_url, json=update_data, headers=headers)
             
         except Exception as e:
-            print(f"Error processing page: {e}")
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()
